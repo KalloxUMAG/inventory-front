@@ -1,12 +1,18 @@
 <template>
   <q-page padding>
-    <RenderTable :columns="columns" :rows="this.equipments" title="Equipamiento" detail_query="/equipments/" row_key="id"/>
+    <RenderTable
+      :columns="columns"
+      :rows="this.equipments"
+      title="Equipamiento"
+      detail_query="/equipments/"
+      row_key="id"
+    />
   </q-page>
 </template>
 
 <script>
 import RenderTable from "src/components/RenderTable.vue";
-import axios from 'axios'
+import axios from "axios";
 
 const columns = [
   {
@@ -69,21 +75,19 @@ const columns = [
 
 export default {
   components: { RenderTable },
-  data(){
-    return{
-      equipments: []
-    }
+  data() {
+    return {
+      equipments: [],
+    };
   },
-  methods:{
-    getEquipments(){
-      axios.get("http://localhost:8000/api/equipments").then(
-        response => (
-          this.equipments = response.data
-        )
-      )
-    }
+  methods: {
+    getEquipments() {
+      axios
+        .get("https://inventory-back-production.up.railway.app/api/equipments")
+        .then((response) => (this.equipments = response.data));
+    },
   },
-  mounted(){
+  mounted() {
     this.getEquipments();
   },
   setup() {
