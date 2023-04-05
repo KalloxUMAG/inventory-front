@@ -4,7 +4,7 @@
       <q-form
         @submit.prevent="onSubmit"
         @reset="onReset"
-        class="q-gutter-md col-xs-12 col-sm-12 col-md-6 q-pt-xl"
+        class="q-gutter-md col-xs-12 col-sm-12 col-md-6 q-pt-xl relative-position"
         ref="createEquipmentForm"
       >
         <!--Datos Producto-->
@@ -13,7 +13,7 @@
           filled
           v-model="name"
           maxlength="49"
-          label="Nombre del equipo"
+          label="Nombre del equipo*"
           lazy-rules
           :rules="[
             (val) => (val && val.length > 0) || 'Este campo es obligatorio',
@@ -26,11 +26,11 @@
           filled
           v-model="serial"
           maxlength="30"
-          label="Código serial"
+          label="Código serial*"
           lazy-rules
           :rules="[
             (val) => (val && val.length > 0) || 'Este campo es obligatorio',
-            (val) => (val && val.length < 31) || 'Máximo 30 caracteres',
+            (val) => (val && val.length < 256) || 'Máximo 255 caracteres',
           ]"
         />
         <q-input
@@ -38,71 +38,167 @@
           v-model="inventory"
           maxlength="11"
           type="number"
-          label="Inventario UMAG"
+          label="Inventario UMAG*"
           lazy-rules
           :rules="[
             (val) =>
-              (val < 99999999999 && val > 0) ||
-              'El valor debe estar entre 1 y 99999999999',
+              (val.length < 26 && val > 0) ||
+              'El valor debe ser mayor que 0 y tener un maximo de 25 dígitos',
           ]"
         />
-        <!--Modelo-->
-        <q-select
-          v-if="!this.newmodelstate"
-          filled
-          v-model="model"
-          :options="modelOptions"
-          option-value="id"
-          option-label="name"
-          emit-value
-          map-options
-          label="Modelo"
-        >
-          <template v-slot:no-option>
-            <q-item>
-              <q-item-section class="text-italic text-grey">
-                No hay modelos disponibles
-              </q-item-section>
-            </q-item>
-          </template>
-        </q-select>
-        <div v-if="!this.newmodelstate" class="row justify-end">
-          <q-btn
-            label="Añadir modelo"
-            icon="add"
-            class="bg-green-3 text-caption"
-            @click="this.newmodelstate = !this.newmodelstate"
-          />
-        </div>
-        <div v-else>
-          <div class="row q-col-gutter-md">
-            <q-input class="col" label="Marca" v-model="newbrand" lazy-rules />
-            <q-input class="col" label="Modelo" v-model="newmodel" lazy-rules />
-            <q-input
-              class="col"
-              label="Número de Producto"
-              type="number"
-              v-model="newnumber"
-              lazy-rules
+
+        <!--Brand Model Number-->
+
+        <div class="row justify-center">
+          <div v-if="!this.newbrandstate" class="col q-mr-md">
+            <SelectForm
+              class="row q-mr-md"
+              :options="brandOptions"
+              option_value="id"
+              option_label="name"
+              label="Marca"
+              not_found_label="No hay marcas disponibles"
+              @updateModel="
+                (value) => {
+                  brand = value;
+                  getModels();
+                }
+              "
             />
+            <div class="row justify-end q-pt-md">
+              <q-btn
+                label="Añadir marca"
+                icon="add"
+                class="bg-green-3 text-caption q-mr-md"
+                @click="this.newbrandstate = !this.newbrandstate"
+              />
+            </div>
           </div>
-          <div class="row justify-end q-pt-sm q-pb-md">
-            <q-btn
-              label="Cancelar"
-              color="negative"
-              class="q-ml-sm"
-              @click="this.newmodelstate = !this.newmodelstate"
+          <div v-else class="col">
+            <div class="row">
+              <q-input v-model="newbrand" label="Nombre marca" class="col" />
+            </div>
+            <div class="row justify-end q-mt-sm">
+              <q-btn
+                label="Usar existente"
+                color="amber"
+                @click="this.newbrandstate = !this.newbrandstate"
+              />
+            </div>
+          </div>
+          <div
+            v-if="!this.newbrandstate && !this.newmodelstate"
+            class="col q-mr-md"
+          >
+            <SelectForm
+              class="row q-mr-md"
+              :options="modelOptions"
+              option_value="id"
+              option_label="name"
+              label="Modelo"
+              not_found_label="No hay modelos disponibles"
+              @updateModel="
+                (value) => {
+                  model = value;
+                  getModelNumbers();
+                }
+              "
             />
+            <div class="row justify-end q-pt-md">
+              <q-btn
+                label="Añadir modelo"
+                icon="add"
+                class="bg-green-3 text-caption q-mr-md"
+                @click="this.newmodelstate = !this.newmodelstate"
+              />
+            </div>
+          </div>
+          <div v-else class="col q-pl-md">
+            <div class="row">
+              <q-input v-model="newmodel" label="Nombre modelo" class="col" />
+            </div>
+            <div
+              v-if="!this.newbrandstate && this.newmodelstate"
+              class="row justify-end q-mt-sm"
+            >
+              <q-btn
+                label="Usar existente"
+                color="amber"
+                @click="this.newmodelstate = !this.newmodelstate"
+              />
+            </div>
+          </div>
+          <div
+            v-if="
+              !this.newbrandstate &&
+              !this.newmodelstate &&
+              !this.newmodelnumberstate
+            "
+            class="col q-mr-md"
+          >
+            <SelectForm
+              class="row q-mr-md"
+              :options="modelNumberOptions"
+              option_value="id"
+              option_label="name"
+              label="Número modelo"
+              not_found_label="No hay número de modelo disponibles"
+              @updateModel="
+                (value) => {
+                  modelNumber = value;
+                }
+              "
+            />
+            <div class="row justify-end q-pt-md">
+              <q-btn
+                label="Añadir sala"
+                icon="add"
+                class="bg-green-3 text-caption q-mr-md"
+                @click="this.newmodelnumberstate = !this.newmodelnumberstate"
+              />
+            </div>
+          </div>
+          <div v-else class="col q-pl-md">
+            <div class="row">
+              <q-input
+                v-model="newmodelnumber"
+                label="Número modelo"
+                class="col"
+              />
+            </div>
+            <div
+              v-if="
+                !this.newbrandstate &&
+                !this.newmodelstate &&
+                this.newmodelnumberstate
+              "
+              class="row justify-end q-mt-sm"
+            >
+              <q-btn
+                label="Usar existente"
+                color="amber"
+                @click="this.newmodelnumberstate = !this.newmodelnumberstate"
+              />
+            </div>
           </div>
         </div>
 
-        <q-input
-          filled
-          v-model="maintenance"
-          type="number"
-          label="Periodo de mantención (días)"
-          lazy-rules
+        <!--Mantenimiento-->
+        <q-checkbox
+          v-model="maintenanceApply"
+          val="lg"
+          label="Aplica para mantención"
         />
+        <SelectForm
+          v-if="maintenanceApply"
+          :options="maintenanceOptions"
+          option_value="value"
+          option_label="name"
+          label="Periodo de mantención"
+          not_found_label="No hay periodos disponibles"
+          @updateModel="(value) => (maintenance = value)"
+        />
+        <!--Observacion-->
         <q-input
           filled
           v-model="observation"
@@ -111,36 +207,47 @@
           lazy-rules
         />
 
-        <!--Datos de compra-->
-
-        <q-select
-          v-if="!this.newsupplierstate"
-          filled
-          v-model="supplier"
-          :options="suppliersOptions"
-          option-value="id"
-          option-label="name"
-          emit-value
-          map-options
-          label="Proveedor"
-        >
-          <template v-slot:no-option>
-            <q-item>
-              <q-item-section class="text-italic text-grey">
-                No hay proveedores disponibles
-              </q-item-section>
-            </q-item>
-          </template>
-        </q-select>
-        <div v-if="!this.newsupplierstate" class="row justify-end">
-          <q-btn
-            v-if="!this.newsupplierstate"
-            label="Añadir proveedor"
-            icon="add"
-            class="bg-green-3 text-caption"
-            @click="this.newsupplierstate = !this.newsupplierstate"
-          />
+        <!--Imagenes equipamiento equipmentImages-->
+        <div class="row">
+          <div class="col">
+            <q-file
+              v-model="equipmentimages"
+              label="Selecciona imagenes para el equipo"
+              filled
+              counter
+              max-files="5"
+              multiple
+              accept=".jpg, image/*"
+              clearable
+            >
+              <template v-slot:prepend>
+                <q-icon name="cloud_upload" />
+              </template>
+            </q-file>
+          </div>
         </div>
+
+        <!--Datos de compra-->
+        <!--Datos de proveedor-->
+        <div v-if="!this.newsupplierstate">
+          <SelectForm
+            :options="suppliersOptions"
+            option_value="id"
+            option_label="name"
+            label="Proveedor"
+            not_found_label="No hay proveedores disponibles"
+            @updateModel="(value) => (supplier = value)"
+          />
+          <div class="row justify-end q-mt-md">
+            <q-btn
+              label="Añadir proveedor"
+              icon="add"
+              class="bg-green-3 text-caption"
+              @click="this.newsupplierstate = !this.newsupplierstate"
+            />
+          </div>
+        </div>
+
         <div v-else>
           <div class="row">
             <q-input
@@ -155,10 +262,62 @@
               class="col q-ml-md"
             />
           </div>
+          <div class="row q-mt-sm">
+            <q-input
+              v-model="workername1"
+              label="Nombre trabajador"
+              class="col"
+            />
+            <SelectForm
+              :options="rolOptions"
+              option_value="value"
+              option_label="name"
+              label="Roles"
+              not_found_label="No hay roles disponibles"
+              @updateModel="(value) => (workerrol1 = value)"
+              class="col q-ml-md"
+            />
+            <q-input
+              v-model="workermail1"
+              label="Correo trabajador"
+              class="col q-ml-md"
+            />
+            <q-input
+              v-model="workerphone1"
+              label="Telefono trabajador"
+              class="col q-ml-md"
+            />
+          </div>
+          <div class="row q-mt-sm">
+            <q-input
+              v-model="workername2"
+              label="Nombre trabajador"
+              class="col"
+            />
+            <SelectForm
+              :options="rolOptions"
+              option_value="value"
+              option_label="name"
+              label="Roles"
+              not_found_label="No hay roles disponibles"
+              @updateModel="(value) => (workerrol2 = value)"
+              class="col q-ml-md"
+            />
+            <q-input
+              v-model="workermail2"
+              label="Correo trabajador"
+              class="col q-ml-md"
+            />
+            <q-input
+              v-model="workerphone2"
+              label="Telefono trabajador"
+              class="col q-ml-md"
+            />
+          </div>
           <div class="row justify-end q-mt-sm">
             <q-btn
-              label="Cancelar"
-              color="negative"
+              label="Usar existente"
+              color="amber"
               @click="this.newsupplierstate = !this.newsupplierstate"
             />
           </div>
@@ -168,7 +327,7 @@
           filled
           v-model="reception_date"
           type="date"
-          label="Fecha de recepción"
+          label="Fecha de recepción*"
           stack-label
           lazy-rules
           :rules="[
@@ -177,33 +336,25 @@
         />
 
         <!--Invoices-->
-        <q-select
-          v-if="!this.newinvoicestate"
-          filled
-          v-model="invoice"
-          :options="invoicesOptions"
-          option-value="id"
-          option-label="number"
-          emit-value
-          map-options
-          label="Facturas"
-        >
-          <template v-slot:no-option>
-            <q-item>
-              <q-item-section class="text-italic text-grey">
-                No hay facturas disponibles
-              </q-item-section>
-            </q-item>
-          </template>
-        </q-select>
-        <div v-if="!this.newinvoicestate" class="row justify-end">
-          <q-btn
-            label="Añadir factura"
-            icon="add"
-            class="bg-green-3 text-caption"
-            @click="this.newinvoicestate = !this.newinvoicestate"
+        <div v-if="!this.newinvoicestate">
+          <SelectForm
+            :options="invoicesOptions"
+            option_value="id"
+            option_label="number"
+            label="Facturas"
+            not_found_label="No hay facturas disponibles"
+            @updateModel="(value) => (invoice = value)"
           />
+          <div class="row justify-end q-mt-md">
+            <q-btn
+              label="Añadir factura"
+              icon="add"
+              class="bg-green-3 text-caption"
+              @click="this.newinvoicestate = !this.newinvoicestate"
+            />
+          </div>
         </div>
+
         <div v-else>
           <div class="row">
             <q-input
@@ -220,10 +371,24 @@
               class="col q-ml-md"
             />
           </div>
+          <div class="row q-mt-sm">
+            <q-file
+              class="col"
+              v-model="invoiceimage"
+              filled
+              label="Foto de factura"
+              accept=".jpg, image/*"
+              clearable
+            >
+              <template v-slot:prepend>
+                <q-icon name="cloud_upload" />
+              </template>
+            </q-file>
+          </div>
           <div class="row justify-end q-mt-sm">
             <q-btn
-              label="Cancelar"
-              color="negative"
+              label="Usar existente"
+              color="amber"
               @click="this.newinvoicestate = !this.newinvoicestate"
             />
           </div>
@@ -233,26 +398,20 @@
 
         <div class="row justify-center">
           <div v-if="!this.newprojectstate" class="col q-mr-md">
-            <q-select
+            <SelectForm
               class="row q-mr-md"
-              filled
-              v-model="project"
               :options="projectOptions"
-              option-value="id"
-              option-label="name"
-              emit-value
-              map-options
-              @update:model-value="getStages"
+              option_value="id"
+              option_label="name"
               label="Proyectos"
-            >
-              <template v-slot:no-option>
-                <q-item>
-                  <q-item-section class="text-italic text-grey">
-                    No hay proyectos disponibles
-                  </q-item-section>
-                </q-item>
-              </template>
-            </q-select>
+              not_found_label="No hay proyectos disponibles"
+              @updateModel="
+                (value) => {
+                  project = value;
+                  getStages();
+                }
+              "
+            />
             <div class="row justify-end q-pt-md">
               <q-btn
                 label="Añadir Proyecto"
@@ -279,8 +438,8 @@
             </div>
             <div class="row justify-end q-mt-sm">
               <q-btn
-                label="Cancelar"
-                color="negative"
+                label="Usar existente"
+                color="amber"
                 @click="this.newprojectstate = !this.newprojectstate"
               />
             </div>
@@ -290,25 +449,15 @@
             v-if="!this.newstagestate && !this.newprojectstate"
             class="col q-ml-md"
           >
-            <q-select
+            <SelectForm
               class="row"
-              filled
-              v-model="stage"
               :options="stagesOptions"
-              option-value="id"
-              option-label="name"
-              emit-value
-              map-options
+              option_value="id"
+              option_label="name"
               label="Etapas"
-            >
-              <template v-slot:no-option>
-                <q-item>
-                  <q-item-section class="text-italic text-grey">
-                    No hay etapas disponibles
-                  </q-item-section>
-                </q-item>
-              </template>
-            </q-select>
+              not_found_label="No hay etapas disponibles"
+              @updateModel="(value) => (stage = value)"
+            />
             <div class="row justify-end q-pt-md">
               <q-btn
                 label="Añadir Etapa"
@@ -331,8 +480,8 @@
               class="row justify-end q-mt-sm"
             >
               <q-btn
-                label="Cancelar"
-                color="negative"
+                label="Usar existente"
+                color="amber"
                 @click="this.newstagestate = !this.newstagestate"
               />
             </div>
@@ -342,26 +491,20 @@
         <!--Location-->
         <div class="row justify-center">
           <div v-if="!this.newbuildingstate" class="col q-mr-md">
-            <q-select
+            <SelectForm
               class="row q-mr-md"
-              filled
-              v-model="building"
               :options="buildingOptions"
-              option-value="id"
-              option-label="name"
-              emit-value
-              map-options
-              @update:model-value="getUnits"
-              label="Edificios"
-            >
-              <template v-slot:no-option>
-                <q-item>
-                  <q-item-section class="text-italic text-grey">
-                    No hay edificios disponibles
-                  </q-item-section>
-                </q-item>
-              </template>
-            </q-select>
+              option_value="id"
+              option_label="name"
+              label="Edificio"
+              not_found_label="No hay edificios disponibles"
+              @updateModel="
+                (value) => {
+                  building = value;
+                  getUnits();
+                }
+              "
+            />
             <div class="row justify-end q-pt-md">
               <q-btn
                 label="Añadir Edificio"
@@ -381,8 +524,8 @@
             </div>
             <div class="row justify-end q-mt-sm">
               <q-btn
-                label="Cancelar"
-                color="negative"
+                label="Usar existente"
+                color="amber"
                 @click="this.newbuildingstate = !this.newbuildingstate"
               />
             </div>
@@ -391,26 +534,20 @@
             v-if="!this.newbuildingstate && !this.newunitstate"
             class="col q-mr-md"
           >
-            <q-select
+            <SelectForm
               class="row q-mr-md"
-              filled
-              v-model="unit"
               :options="unitOptions"
-              option-value="id"
-              option-label="name"
-              emit-value
-              map-options
-              @update:model-value="getRooms"
-              label="Unidades"
-            >
-              <template v-slot:no-option>
-                <q-item>
-                  <q-item-section class="text-italic text-grey">
-                    No hay unidades disponibles
-                  </q-item-section>
-                </q-item>
-              </template>
-            </q-select>
+              option_value="id"
+              option_label="name"
+              label="Unidad"
+              not_found_label="No hay una unidad disponible"
+              @updateModel="
+                (value) => {
+                  unit = value;
+                  getRooms();
+                }
+              "
+            />
             <div class="row justify-end q-pt-md">
               <q-btn
                 label="Añadir unidad"
@@ -433,8 +570,8 @@
               class="row justify-end q-mt-sm"
             >
               <q-btn
-                label="Cancelar"
-                color="negative"
+                label="Usar existente"
+                color="amber"
                 @click="this.newunitstate = !this.newunitstate"
               />
             </div>
@@ -445,25 +582,19 @@
             "
             class="col q-mr-md"
           >
-            <q-select
+            <SelectForm
               class="row q-mr-md"
-              filled
-              v-model="room"
               :options="roomOptions"
-              option-value="id"
-              option-label="name"
-              emit-value
-              map-options
-              label="Salas"
-            >
-              <template v-slot:no-option>
-                <q-item>
-                  <q-item-section class="text-italic text-grey">
-                    No hay salas disponibles
-                  </q-item-section>
-                </q-item>
-              </template>
-            </q-select>
+              option_value="id"
+              option_label="name"
+              label="Sala"
+              not_found_label="No hay salas disponibles"
+              @updateModel="
+                (value) => {
+                  room = value;
+                }
+              "
+            />
             <div class="row justify-end q-pt-md">
               <q-btn
                 label="Añadir sala"
@@ -486,56 +617,112 @@
               class="row justify-end q-mt-sm"
             >
               <q-btn
-                label="Cancelar"
-                color="negative"
+                label="Usar existente"
+                color="amber"
                 @click="this.newroomstate = !this.newroomstate"
               />
             </div>
           </div>
         </div>
 
+        <!--Form button-->
         <div class="row justify-end">
-          <q-btn label="Submit" type="submit" color="primary" />
+          <q-btn label="Crear" type="submit" color="primary" />
           <q-btn
-            label="Reset"
+            label="Limpiar campos"
             type="reset"
             color="primary"
             flat
             class="q-ml-sm"
           />
         </div>
+        <q-inner-loading
+          :showing="loading"
+          label="Creando equipamiento"
+          label-class="text-deep-orange"
+          label-style="font-size: 1.6em"
+        />
       </q-form>
     </div>
   </q-page>
 </template>
 
 <script>
-import { useQuasar } from "quasar";
+import { TouchSwipe, useQuasar } from "quasar";
 import { ref } from "vue";
 import axios from "axios";
+import SelectForm from "src/components/SelectForm.vue";
+
+const MaintenanceOptions = [
+  {
+    value: 1,
+    name: "Mensual",
+  },
+  {
+    value: 3,
+    name: "Trimestral",
+  },
+  {
+    value: 6,
+    name: "Semestral",
+  },
+  {
+    value: 12,
+    name: "Anual",
+  },
+];
+
+const RolOptions = [
+  {
+    value: "Vendedor",
+    name: "Vendedor",
+  },
+  {
+    value: "Tecnico",
+    name: "Tecnico",
+  },
+];
 
 export default {
+  components: {
+    SelectForm,
+  },
+
+  data() {
+    return {
+      maintenanceOptions: MaintenanceOptions,
+      rolOptions: RolOptions,
+    };
+  },
+
   setup() {
+    const brand = ref(null);
+    const brandOptions = ref([]);
     const building = ref(null);
-    const buildingOptions = ref(null);
-    const buildings = ref([]);
+    const buildingOptions = ref([]);
     const createEquipmentForm = ref(null);
+    const equipmentimages = ref(null);
+    const invoiceimage = ref(null);
     const name = ref(null);
     const serial = ref(null);
     const inventory = ref(null);
     const invoice = ref(null);
-    const invoices = ref([]);
     const invoicesOptions = ref([]);
+    const loading = ref(false);
     const model = ref(null);
-    const models = ref([]);
     const modelOptions = ref([]);
+    const modelNumber = ref(null);
+    const modelNumberOptions = ref([]);
     const maintenance = ref(null);
     const observation = ref(null);
+    const newbrandstate = ref(false);
     const newbuildingname = ref(null);
     const newbuildingstate = ref(false);
     const newinvoicestate = ref(false);
     const newmodelstate = ref(null);
+    const newmodelnumberstate = ref(false);
     const newmodel = ref(null);
+    const newmodelnumber = ref(null);
     const newbrand = ref(null);
     const newinvoicenumber = ref(null);
     const newinvoicedate = ref(null);
@@ -554,29 +741,44 @@ export default {
     const newunitname = ref(null);
     const newunitstate = ref(false);
     const project = ref(null);
-    const projects = ref([]);
     const projectOptions = ref([]);
     const reception_date = ref(null);
     const stage = ref(null);
-    const stages = ref([]);
     const stagesOptions = ref([]);
     const room = ref(null);
-    const rooms = ref([]);
     const roomOptions = ref([]);
+    const maintenanceApply = ref(false);
     const supplier = ref(null);
-    const suppliers = ref([]);
     const suppliersOptions = ref([]);
     const unit = ref(null);
     const unitOptions = ref([]);
-    const units = ref([]);
+    const workername1 = ref(null);
+    const workerrol1 = ref(null);
+    const workermail1 = ref(null);
+    const workerphone1 = ref(null);
+    const workername2 = ref(null);
+    const workerrol2 = ref(null);
+    const workermail2 = ref(null);
+    const workerphone2 = ref(null);
     const $q = useQuasar();
+
+    const getBrands = () => {
+      axios
+        .get("https://inventory-back-production.up.railway.app/api/brands")
+        .then((response) => {
+          const brands = response.data;
+          brandOptions.value = brands.map((x) => {
+            return { id: x.id, name: x.name };
+          });
+        });
+    };
 
     const getBuildings = () => {
       axios
         .get("https://inventory-back-production.up.railway.app/api/buildings")
         .then((response) => {
-          buildings.value = response.data;
-          buildingOptions.value = buildings.value.map((x) => {
+          const buildings = response.data;
+          buildingOptions.value = buildings.map((x) => {
             return { id: x.id, name: x.name };
           });
         });
@@ -586,8 +788,8 @@ export default {
       axios
         .get("https://inventory-back-production.up.railway.app/api/invoices")
         .then((response) => {
-          invoices.value = response.data;
-          invoicesOptions.value = invoices.value.map((x) => {
+          const invoices = response.data;
+          invoicesOptions.value = invoices.map((x) => {
             return { id: x.id, number: x.number };
           });
         });
@@ -595,14 +797,28 @@ export default {
 
     const getModels = () => {
       axios
-        .get("https://inventory-back-production.up.railway.app/api/models")
+        .get(
+          "https://inventory-back-production.up.railway.app/api/models/" +
+            brand.value
+        )
         .then((response) => {
-          models.value = response.data;
-          modelOptions.value = models.value.map((x) => {
-            return {
-              id: x.id,
-              name: x.brand + " " + x.model + " " + x.product_number,
-            };
+          const models = response.data;
+          modelOptions.value = models.map((x) => {
+            return { id: x.id, name: x.name };
+          });
+        });
+    };
+
+    const getModelNumbers = () => {
+      axios
+        .get(
+          "https://inventory-back-production.up.railway.app/api/model_numbers/" +
+            model.value
+        )
+        .then((response) => {
+          const modelnumbers = response.data;
+          modelNumberOptions.value = modelnumbers.map((x) => {
+            return { id: x.id, name: x.number };
           });
         });
     };
@@ -611,8 +827,8 @@ export default {
       axios
         .get("https://inventory-back-production.up.railway.app/api/projects")
         .then((response) => {
-          projects.value = response.data;
-          projectOptions.value = projects.value.map((x) => {
+          const projects = response.data;
+          projectOptions.value = projects.map((x) => {
             return { id: x.id, name: x.name };
           });
         });
@@ -624,8 +840,8 @@ export default {
         unit.value;
       axios.get(api_url).then((response) => {
         room.value = null;
-        rooms.value = response.data;
-        roomOptions.value = rooms.value.map((x) => {
+        const rooms = response.data;
+        roomOptions.value = rooms.map((x) => {
           return { id: x.id, name: x.name };
         });
       });
@@ -637,8 +853,8 @@ export default {
         project.value;
       axios.get(api_url).then((response) => {
         stage.value = null;
-        stages.value = response.data;
-        stagesOptions.value = stages.value.map((x) => {
+        const stages = response.data;
+        stagesOptions.value = stages.map((x) => {
           return { id: x.id, name: x.name };
         });
       });
@@ -648,8 +864,8 @@ export default {
       axios
         .get("https://inventory-back-production.up.railway.app/api/suppliers")
         .then((response) => {
-          suppliers.value = response.data;
-          suppliersOptions.value = suppliers.value.map((x) => {
+          const suppliers = response.data;
+          suppliersOptions.value = suppliers.map((x) => {
             return { id: x.id, name: x.name };
           });
         });
@@ -661,8 +877,10 @@ export default {
         building.value;
       axios.get(api_url).then((response) => {
         unit.value = null;
-        units.value = response.data;
-        unitOptions.value = units.value.map((x) => {
+        room.value = null;
+        roomOptions.value = [];
+        const units = response.data;
+        unitOptions.value = units.map((x) => {
           return { id: x.id, name: x.name };
         });
       });
@@ -677,6 +895,31 @@ export default {
       observation.value = null;
       reception_date.value = null;
     };
+
+    async function createNewBrand() {
+      if (!newbrandstate.value) {
+        return brand.value;
+      }
+
+      const branddata = {
+        name: newbrand.value,
+      };
+
+      try {
+        const response = await axios.post(
+          "https://inventory-back-production.up.railway.app/api/brands",
+          branddata
+        );
+        return response.data;
+      } catch (error) {
+        $q.notify({
+          color: "red-3",
+          textColor: "white",
+          icon: "error",
+          message: "No se pudo crear la marca: " + error,
+        });
+      }
+    }
 
     async function createNewBuilding() {
       if (!newbuildingstate.value) {
@@ -703,9 +946,9 @@ export default {
       }
     }
 
-    async function createNewInvoice(equipmentdata) {
+    async function createNewInvoice() {
       if (!newinvoicestate.value) {
-        return equipmentdata;
+        return invoice.value;
       }
 
       const invoicedata = {
@@ -718,8 +961,7 @@ export default {
           "https://inventory-back-production.up.railway.app/api/invoices",
           invoicedata
         );
-        equipmentdata["invoice_id"] = response.data;
-        return equipmentdata;
+        return response.data;
       } catch (error) {
         $q.notify({
           color: "red-3",
@@ -730,15 +972,14 @@ export default {
       }
     }
 
-    async function createNewModel(equipmentdata) {
-      if (!newmodelstate.value) {
-        return equipmentdata;
+    async function createNewModel(brand_id) {
+      if (!newbrandstate.value && !newmodelstate.value) {
+        return model.value;
       }
 
       const newmodeldata = {
-        model: newmodel.value,
-        brand: newbrand.value,
-        product_number: newnumber.value,
+        name: newmodel.value,
+        brand_id: brand_id,
       };
 
       try {
@@ -746,14 +987,44 @@ export default {
           "https://inventory-back-production.up.railway.app/api/models",
           newmodeldata
         );
-        equipmentdata["model_id"] = response.data;
-        return equipmentdata;
+        return response.data;
       } catch (error) {
         $q.notify({
           color: "red-3",
           textColor: "white",
           icon: "error",
           message: "No se pudo crear el modelo: " + error,
+        });
+        return -1;
+      }
+    }
+
+    async function createNewModelnumber(model_id) {
+      if (
+        !newbrandstate.value &&
+        !newmodelstate.value &&
+        !newmodelnumber.value
+      ) {
+        return modelNumber.value;
+      }
+
+      const newmodelnumberdata = {
+        number: newmodelnumber.value,
+        model_id: model_id,
+      };
+
+      try {
+        const response = await axios.post(
+          "https://inventory-back-production.up.railway.app/api/model_numbers",
+          newmodelnumberdata
+        );
+        return response.data;
+      } catch (error) {
+        $q.notify({
+          color: "red-3",
+          textColor: "white",
+          icon: "error",
+          message: "No se pudo crear el número de modelo: " + error,
         });
       }
     }
@@ -846,9 +1117,9 @@ export default {
       }
     }
 
-    async function createNewSupplier(equipmentdata) {
+    async function createNewSupplier() {
       if (!newsupplierstate.value) {
-        return equipmentdata;
+        return supplier.value;
       }
       const supplierdata = {
         name: newsuppliername.value,
@@ -860,8 +1131,7 @@ export default {
           "https://inventory-back-production.up.railway.app/api/suppliers",
           supplierdata
         );
-        equipmentdata["supplier_id"] = response.data;
-        return equipmentdata;
+        return response.data;
       } catch (error) {
         $q.notify({
           color: "red-3",
@@ -869,6 +1139,56 @@ export default {
           icon: "error",
           message: "No se pudo crear el proveedor: " + error,
         });
+      }
+    }
+
+    async function createNewWorker(supplier_id) {
+      if (!newsupplierstate.value) {
+        return;
+      }
+      if (workername1.value != null) {
+        const workerdata1 = {
+          name: workername1.value,
+          position: workerrol1.value,
+          phone: workerphone1.value,
+          email: workermail1.value,
+          supplier_id: supplier_id,
+        };
+        try {
+          const response = await axios.post(
+            "https://inventory-back-production.up.railway.app/api/suppliers_contacts",
+            workerdata1
+          );
+        } catch (error) {
+          $q.notify({
+            color: "red-3",
+            textColor: "white",
+            icon: "error",
+            message: "No se pudo crear el contacto 1: " + error,
+          });
+        }
+      }
+      if (workername2.value != null) {
+        const workerdata2 = {
+          name: workername2.value,
+          position: workerrol2.value,
+          phone: workerphone2.value,
+          email: workermail2.value,
+          supplier_id: supplier_id,
+        };
+        try {
+          const response = await axios.post(
+            "https://inventory-back-production.up.railway.app/api/suppliers_contacts",
+            workerdata2
+          );
+        } catch (error) {
+          $q.notify({
+            color: "red-3",
+            textColor: "white",
+            icon: "error",
+            message: "No se pudo crear el contacto 2: " + error,
+          });
+        }
       }
     }
 
@@ -936,7 +1256,9 @@ export default {
         project_id: project.value,
         stage_id: stage.value,
       };
-
+      if (stage.value == null) {
+        return;
+      }
       relationdata = await createNewProject(relationdata);
       relationdata = await createNewStage(relationdata);
 
@@ -964,6 +1286,56 @@ export default {
       }
     }
 
+    async function uploadInvoiceImage(equipment_id) {
+      if (!newinvoicestate.value || invoiceimage.value == null) {
+        return;
+      }
+      const formData = new FormData();
+      formData.append("file", invoiceimage.value);
+      try {
+        const response = await axios.post(
+          "https://inventory-back-production.up.railway.app/api/invoices/" +
+            equipment_id,
+          formData
+        );
+      } catch (error) {
+        $q.notify({
+          color: "red-3",
+          textColor: "white",
+          icon: "error",
+          message: "No se pudo guardar la imagen de factura: " + error,
+        });
+      }
+    }
+
+    async function uploadEquipmentImage(equipment_id) {
+      if (equipmentimages.value == null) {
+        return;
+      }
+      equipmentimages.value.forEach((image) => {
+        const formData = new FormData();
+        formData.append("file", image);
+        uploadEquipmentImage2(equipment_id, formData);
+      });
+    }
+
+    async function uploadEquipmentImage2(equipment_id, formData) {
+      try {
+        const response = await axios.post(
+          "https://inventory-back-production.up.railway.app/api/equipments/" +
+            equipment_id,
+          formData
+        );
+      } catch (error) {
+        $q.notify({
+          color: "red-3",
+          textColor: "white",
+          icon: "error",
+          message: "No se pudo guardar la imagen del equipo: " + error,
+        });
+      }
+    }
+
     async function onSubmit() {
       createEquipmentForm.value.resetValidation();
       let equipmentdata = {
@@ -971,44 +1343,103 @@ export default {
         serial_number: serial.value,
         umag_inventory_code: inventory.value,
         reception_date: reception_date.value,
-        maintenance_period: maintenance.value,
         observation: observation.value,
-        model_id: model.value,
+        model_number_id: modelNumber.value,
         supplier_id: supplier.value,
         invoice_id: invoice.value,
         room_id: room.value,
       };
 
+      loading.value = true;
+      if (maintenanceApply.value) {
+        equipmentdata["maintenance_period"] = maintenance.value;
+      }
       const building_id = await createNewBuilding();
+      if (building_id == -1) {
+        console.log("1");
+        loading.value = false;
+        return;
+      }
       const unit_id = await createNewUnit(building_id);
+      if (unit_id == -1) {
+        console.log("2");
+        loading.value = false;
+        return;
+      }
       const room_id = await createNewRoom(unit_id);
-
+      if (room_id == -1) {
+        console.log("3");
+        loading.value = false;
+        return;
+      }
       equipmentdata["room_id"] = room_id;
 
-      equipmentdata = await createNewModel(equipmentdata);
-      equipmentdata = await createNewSupplier(equipmentdata);
-      equipmentdata = await createNewInvoice(equipmentdata);
+      const brand_id = await createNewBrand();
+      if (brand_id == -1) {
+        console.log("4");
+        loading.value = false;
+        return;
+      }
+      const model_id = await createNewModel(brand_id);
+      if (model_id == -1) {
+        console.log("5");
+        loading.value = false;
+        return;
+      }
+      const model_number_id = await createNewModelnumber(model_id);
+      if (model_number_id == -1) {
+        console.log("6");
+        loading.value = false;
+        return;
+      }
+
+      equipmentdata["model_number_id"] = model_number_id;
+
+      const supplier_id = await createNewSupplier();
+      if (supplier_id == -1) {
+        console.log("7");
+        loading.value = false;
+        return;
+      }
+      equipmentdata["supplier_id"] = supplier_id;
+      await createNewWorker(supplier_id);
+      const invoice_id = await createNewInvoice();
+      if (invoice_id == -1) {
+        console.log("8");
+        loading.value = false;
+        return;
+      }
+      equipmentdata["invoice_id"] = invoice_id;
 
       const equipment_id = await createNewEquipment(equipmentdata);
       await createNewProjectEquipment(equipment_id);
-      onReset();
+      uploadEquipmentImage(equipment_id);
+      uploadInvoiceImage(equipment_id);
+      loading.value = false;
+      //onReset()
     }
 
     return {
+      brand,
+      brandOptions,
       building,
       buildingOptions,
-      buildings,
       createEquipmentForm,
+      equipmentimages,
       name,
       serial,
       inventory,
       invoice,
-      invoices,
+      invoiceimage,
       invoicesOptions,
+      loading,
       model,
       maintenance,
+      maintenanceApply,
       observation,
       modelOptions,
+      modelNumber,
+      modelNumberOptions,
       newbuildingname,
       newbuildingstate,
       newinvoicestate,
@@ -1016,7 +1447,10 @@ export default {
       newinvoicedate,
       newinvoicenumber,
       newmodel,
+      newmodelnumber,
+      newmodelnumberstate,
       newbrand,
+      newbrandstate,
       newnumber,
       newprojectstate,
       newprojectname,
@@ -1032,24 +1466,29 @@ export default {
       newunitname,
       newunitstate,
       room,
-      rooms,
       roomOptions,
       project,
-      projects,
       projectOptions,
       reception_date,
       stage,
-      stages,
       stagesOptions,
       supplier,
-      suppliers,
       suppliersOptions,
       unit,
-      units,
       unitOptions,
+      workername1,
+      workermail1,
+      workerphone1,
+      workerrol1,
+      workername2,
+      workermail2,
+      workerphone2,
+      workerrol2,
+      getBrands,
       getBuildings,
       getInvoices,
       getModels,
+      getModelNumbers,
       getProjects,
       getRooms,
       getStages,
@@ -1057,12 +1496,14 @@ export default {
       getUnits,
       onReset,
       onSubmit,
+      uploadInvoiceImage,
+      uploadEquipmentImage,
     };
   },
 
   mounted() {
+    this.getBrands();
     this.getInvoices();
-    this.getModels();
     this.getProjects();
     this.getSuppliers();
     this.getBuildings();
