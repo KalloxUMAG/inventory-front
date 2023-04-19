@@ -1,14 +1,16 @@
 <template>
   <q-carousel v-model="slide" animated arrows thumbnails infinite :height="windowHeight" control-color="amber" class="rounded-borders">
-    <q-carousel-slide v-if="this.images == null" :name="1" img-src="https://cdn.quasar.dev/img/mountains.jpg" />
-    <q-carousel-slide v-for="image in images" :key="image.id" :name="image.id" :img-src="image.path"/>
+
+      <q-carousel-slide v-if="this.images == null" :name="1" img-src="https://cdn.quasar.dev/img/mountains.jpg" />
+      <q-carousel-slide v-for="image in images" :key="image.id" :name="image.id" :img-src="image.path"/>
+
+
   </q-carousel>
 </template>
 
 <script>
 import {ref} from 'vue'
 import axios from 'axios';
-
 
 export default {
   data(){
@@ -18,7 +20,7 @@ export default {
   },
   methods:{
     getContent(){
-      axios.get(this.api).then(
+      axios.get(this.api_endpoint).then(
         response => {
           this.images = response.data
         }
@@ -29,7 +31,7 @@ export default {
     this.getContent()
   },
   props:{
-    api: {
+    api_endpoint: {
       type: String,
       required: true
     }
@@ -44,9 +46,8 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.q-carousel{
-  border-color: rgb(2, 2, 2);
-  border-style: solid;
-  border-width: 7px;
-}
+  .q-carousel__slide{
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+  }
 </style>

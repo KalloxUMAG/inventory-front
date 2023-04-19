@@ -1,17 +1,17 @@
 <template>
   <q-page padding>
-    <div v-if="this.equipment != null" class="row justify-center bg-secondary">
+    <div v-if="equipment != null" class="row justify-center bg-secondary">
       <q-card class="my-card" flat bordered>
         <q-item class="row justify-center">
           <div class="text-h5">
-            {{ this.equipment.name }} - {{ this.equipment.serial_number }}
+            {{ equipment.name }} - {{ equipment.serial_number }}
           </div>
         </q-item>
         <q-separator />
         <q-card-section horizontal>
           <!--Datos carrucel-->
           <q-card-section class="col-4">
-            <Carousel v-if="this.equipment != null" :api="img_api" />
+            <Carousel v-if="equipment != null" :api_endpoint="img_api" />
           </q-card-section>
           <q-separator vertical />
           <!--Datos producto-->
@@ -19,16 +19,14 @@
             <div class="text-h5 q-mb-md text-center">Datos producto</div>
             <div class="row q-mb-xs">
               <div class="col-5 field-label text-right q-mr-md">Nombre:</div>
-              <div class="col field-content q-ml-xs">
-                {{ this.equipment.name }}
-              </div>
+              <div class="col field-content q-ml-xs">{{ equipment.name }}</div>
             </div>
             <div class="row q-mb-xs">
               <div class="col-5 field-label text-right q-mr-md">
                 Codigo serial:
               </div>
               <div class="col field-content q-ml-xs">
-                {{ this.equipment.serial_number }}
+                {{ equipment.serial_number }}
               </div>
             </div>
             <div class="row q-mb-xs">
@@ -36,19 +34,19 @@
                 Inventario UMAG:
               </div>
               <div class="col field-content q-ml-xs">
-                {{ this.equipment.umag_inventory_code }}
+                {{ equipment.umag_inventory_code }}
               </div>
             </div>
             <div class="row q-mb-xs">
               <div class="col-5 field-label text-right q-mr-md">Marca:</div>
               <div class="col field-content q-ml-xs">
-                {{ this.equipment.brand_name }}
+                {{ equipment.brand_name }}
               </div>
             </div>
             <div class="row q-mb-xs">
               <div class="col-5 field-label text-right q-mr-md">Modelo:</div>
               <div class="col field-content q-ml-xs">
-                {{ this.equipment.model_name }}
+                {{ equipment.model_name }}
               </div>
             </div>
             <div class="row q-mb-xs">
@@ -56,7 +54,7 @@
                 Número de modelo:
               </div>
               <div class="col field-content q-ml-xs">
-                {{ this.equipment.model_number }}
+                {{ equipment.model_number }}
               </div>
             </div>
             <div class="row q-mb-xs">
@@ -64,13 +62,13 @@
                 Periodo de mantención:
               </div>
               <div
-                v-if="this.equipment.maintenance_period == null"
+                v-if="equipment.maintenance_period == null"
                 class="col field-content q-ml-xs"
               >
                 No aplica
               </div>
               <div v-else class="col field-content q-ml-xs">
-                Cada {{ this.equipment.maintenance_period }} meses
+                Cada {{ equipment.maintenance_period }} meses
               </div>
             </div>
             <div class="row q-mb-xs">
@@ -78,7 +76,7 @@
                 Observación:
               </div>
               <div class="col field-content q-ml-xs">
-                {{ this.equipment.observation }}
+                {{ equipment.observation }}
               </div>
             </div>
           </q-card-section>
@@ -90,19 +88,19 @@
             <div class="row q-mb-xs">
               <div class="col-5 field-label text-right q-mr-md">Sala:</div>
               <div class="col field-content q-ml-xs">
-                {{ this.equipment.room_name }}
+                {{ equipment.room_name }}
               </div>
             </div>
             <div class="row q-mb-xs">
               <div class="col-5 field-label text-right q-mr-md">Unidad:</div>
               <div class="col field-content q-ml-xs">
-                {{ this.equipment.unit_name }}
+                {{ equipment.unit_name }}
               </div>
             </div>
             <div class="row q-mb-xs">
               <div class="col-5 field-label text-right q-mr-md">Edificio:</div>
               <div class="col field-content q-ml-xs">
-                {{ this.equipment.building_name }}
+                {{ equipment.building_name }}
               </div>
             </div>
           </q-card-section>
@@ -113,7 +111,7 @@
             <div class="row q-mb-xs">
               <div class="col-5 field-label text-right q-mr-md">Proveedor:</div>
               <div class="col field-content q-ml-xs">
-                {{ this.equipment.supplier_name }}
+                {{ equipment.supplier_name }}
               </div>
             </div>
             <div class="row q-mb-xs">
@@ -121,7 +119,7 @@
                 Fecha de recepción:
               </div>
               <div class="col field-content q-ml-xs">
-                {{ this.equipment.reception_date }}
+                {{ equipment.reception_date }}
               </div>
             </div>
             <div class="row q-mb-xs">
@@ -129,45 +127,58 @@
                 Número factura:
               </div>
               <div class="col field-content q-ml-xs">
-                {{ this.equipment.invoice_number }}
+                {{ equipment.invoice_number }}
               </div>
             </div>
             <div class="row q-mb-xs">
               <div class="col-5 field-label text-right q-mr-md">Proyecto:</div>
-              <div
-                class="col field-content q-ml-xs"
-                v-if="this.project != null"
-              >
-                {{ this.project.project_name }}
+              <div class="col field-content q-ml-xs" v-if="project != null">
+                {{ project.project_name }}
               </div>
             </div>
             <div class="row q-mb-xs">
               <div class="col-5 field-label text-right q-mr-md">Etapa:</div>
+              <div class="col field-content q-ml-xs" v-if="project != null">
+                {{ project.stage_name }}
+              </div>
+            </div>
+            <div class="row q-mb-xs">
+              <div class="col-5 field-label text-right q-mr-md">
+                Dueño proyecto:
+              </div>
               <div
                 class="col field-content q-ml-xs"
-                v-if="this.project != null"
+                v-if="project != null && project.project_owner != null"
               >
-                {{ this.project.stage_name }}
+                {{ project.project_owner }}
               </div>
+              <div class="col field-content q-ml-xs" v-else>Ninguno</div>
             </div>
           </q-card-section>
         </q-card-section>
+        <q-card-section v-if="equipment.maintenance_period != null">
+          <NoRedirectTable
+            title="Mantenimientos"
+            :columns="columns_maintenances"
+            :rows="maintenances"
+            :addFunction="addFunction"
+          />
+        </q-card-section>
       </q-card>
     </div>
-    <!--Datos imagen-->
-    <div class="row">
-      <div class="col-6"></div>
-    </div>
-
-    {{ this.project }}
   </q-page>
 </template>
 
-<script>
+<script setup>
 import { useRoute } from "vue-router";
-import { computed } from "vue";
+import { computed, onMounted, ref } from "vue";
 import axios from "axios";
 import Carousel from "src/components/Carousel.vue";
+import NoRedirectTable from "src/components/NoRedirectTable.vue";
+import FormModal from "src/components/FormModal.vue";
+import { useQuasar } from "quasar";
+
+const $q = useQuasar();
 
 const columns_maintenances = [
   {
@@ -193,94 +204,105 @@ const columns_maintenances = [
   },
 ];
 
-const columns_projects = [
-  {
-    name: "project_name",
-    align: "left",
-    label: "Proyecto",
-    field: "project_name",
-    sortable: true,
-  },
-  {
-    name: "stage_name",
-    align: "left",
-    label: "Etapa",
-    field: "stage_name",
-    sortable: false,
-  },
-  {
-    name: "details",
-    align: "left",
-    label: "Ver detalles",
-    field: "details",
-    sortable: false,
-  },
-];
+const content_loaded = ref(false);
 
-const content_loaded = false;
+const img_api = ref(null);
+const equipment = ref(null);
+const maintenances = ref([]);
+const project = ref(null);
 
-export default {
-  components: {
-    Carousel,
-  },
-  data() {
-    return {
-      img_api: null,
-      equipment: null,
-      maintenances: null,
-      project: null,
-    };
-  },
-  methods: {
-    getEquipment() {
-      axios.get(this.query_equipment).then((response) => {
-        this.equipment = response.data;
-        this.img_api =
-          "https://inventory-back-production.up.railway.app/api/equipments/image/" +
-          this.equipment.id;
-      });
+const route = useRoute();
+const id = computed(() => route.params.id);
+const query_equipment =
+  "https://inventory-back-production.up.railway.app/api/equipments/" + id.value;
+const query_maintenances =
+  "https://inventory-back-production.up.railway.app/api/maintenances/" +
+  id.value;
+const query_projects =
+  "https://inventory-back-production.up.railway.app/api/equipment_projects/" +
+  id.value;
+
+function getEquipment() {
+  axios.get(query_equipment).then((response) => {
+    equipment.value = response.data;
+    img_api.value =
+      "https://inventory-back-production.up.railway.app/api/equipments/image/" +
+      equipment.value.id;
+  });
+}
+function getMaintenances() {
+  axios.get(query_maintenances).then((response) => {
+    maintenances.value = response.data;
+  });
+}
+function getProjects() {
+  axios.get(query_projects).then((response) => (project.value = response.data));
+}
+
+function addFunction() {
+  $q.dialog({
+    component: FormModal,
+    componentProps: {
+      title: "Agregar mantenimiento",
+      fields: [
+        {
+          label: "Fecha",
+          type: "date",
+          defaultvalue: null,
+          rules: [(val) => (val && val != null) || "Este campo es obligatorio"],
+        },
+        {
+          label: "Tipo de mantenimiento",
+          type: "select",
+          defaultvalue: null,
+          options: [
+            { id: "Programada", name: "Programada" },
+            { id: "Correctiva", name: "Correctiva" },
+          ],
+          option_value: "id",
+          option_label: "name",
+          not_found_label: "No hay tipos de mantenimiento",
+          rules: [(val) => (val && val != null) || "Este campo es obligatorio"],
+        },
+        {
+          label: "Observaciones",
+          type: "text",
+          defaultvalue: null,
+          autogrow: true,
+          rules: [],
+        },
+      ],
     },
-    getMaintenances() {
-      axios.get(this.query_maintenances).then((response) => {
-        this.maintenances = response.data;
-      });
-    },
-    getProjects() {
+  })
+    .onOk((data) => {
+      const maintenance_data = {
+        date: data[0],
+        observations: data[2],
+        maintenance_type: data[1],
+        equiptment_id: equipment.value.id,
+      };
+
       axios
-        .get(this.query_projects)
-        .then((response) => (this.project = response.data));
-    },
-  },
-  mounted() {
-    this.getEquipment();
-    this.getMaintenances();
-    this.getProjects();
-    this.content_loaded = true;
-  },
-  setup() {
-    const route = useRoute();
-    const id = computed(() => route.params.id);
-    const query_equipment =
-      "https://inventory-back-production.up.railway.app/api/equipments/" +
-      id.value;
-    const query_maintenances =
-      "https://inventory-back-production.up.railway.app/api/maintenances/" +
-      id.value;
-    const query_projects =
-      "https://inventory-back-production.up.railway.app/api/equipment_projects/" +
-      id.value;
+        .post(
+          "https://inventory-back-production.up.railway.app/api/maintenances",
+          maintenance_data,
+          {
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        )
+        .then((response) => getMaintenances());
+    })
+    .onCancel(() => {});
+}
 
-    return {
-      content_loaded,
-      columns_maintenances,
-      columns_projects,
-      id,
-      query_equipment,
-      query_maintenances,
-      query_projects,
-    };
-  },
-};
+onMounted(() => {
+  getEquipment();
+  getMaintenances();
+  getProjects();
+  content_loaded.value = true;
+});
 </script>
 
 <style scoped>
@@ -298,7 +320,6 @@ export default {
 }
 
 .q-page {
-  background-color: #ffe6e9;
   color: #262626;
 }
 </style>
